@@ -82,20 +82,22 @@ int ttreeaddnode(ttree_t *ptree, char *funname, char *filename)
 	// initialize all node data bytes to 0
 	memset(pnode, 0, sizeof(ttreenode_t));
 	iErr = slibcpy(&pnode->funname, funname, -1);
-	if (iErr == 0) {
-		iErr = slibcpy(&pnode->filename, filename, -1);
-		if (iErr == 0) {
-			if (ptree->lastnode) {
-				ptree->lastnode->next = pnode;
-				ptree->lastnode = pnode;
-			} else {
-				ptree->firstnode = pnode;
-				ptree->lastnode = pnode;
-			}
-		}
+	if (iErr != 0)
+		return iErr;
+
+	iErr = slibcpy(&pnode->filename, filename, -1);
+	if (iErr != 0)
+		return iErr;
+
+	if (ptree->lastnode) {
+		ptree->lastnode->next = pnode;
+		ptree->lastnode = pnode;
+	} else {
+		ptree->firstnode = pnode;
+		ptree->lastnode = pnode;
 	}
 
-	return iErr;
+	return 0;
 }
 
 // add a new branch (caller function node to callee function node connection)
