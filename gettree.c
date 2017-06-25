@@ -74,87 +74,81 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 		}
 	}
 
-	filein = fopen(pparam->infile, "r");
-	if (filein == NULL) {
-		printf("\nError while opening input file\n");
-		iErr = -1;
-	} else {
-		lineidx = 0;
-		if (pparam->verbose)
-			printf("\n");
-		while (iErr == 0 &&
-		       fgets(sLine, MAXLINEF, filein) != NULL) {
-			lineidx++;
-			if (pparam->verbose) {
-				printf("Getting tree nodes... "
-				       "line %ld\r",
-				       lineidx);
-			}
-			switch (sLine[0]) {
-			case '\t':
-				switch (sLine[1]) {
-				case '@':
-					// filename where
-					// function is defined
-					if (filedbout != NULL)
-						fputs(
-						    sLine,
-						    filedbout);
-					replendline(sLine);
-					sSub = &sLine[2];
-					iErr =
-					    slibcpy(&sfilename,
-						    sSub, -1);
-					break;
+	lineidx = 0;
+	if (pparam->verbose)
+		printf("\n");
+	while (iErr == 0 &&
+	       fgets(sLine, MAXLINEF, filein) != NULL) {
+		lineidx++;
+		if (pparam->verbose) {
+			printf("Getting tree nodes... "
+			       "line %ld\r",
+			       lineidx);
+		}
+		switch (sLine[0]) {
+		case '\t':
+			switch (sLine[1]) {
+			case '@':
+				// filename where
+				// function is defined
+				if (filedbout != NULL)
+					fputs(
+					    sLine,
+					    filedbout);
+				replendline(sLine);
+				sSub = &sLine[2];
+				iErr =
+				    slibcpy(&sfilename,
+					    sSub, -1);
+				break;
 
-				case '$':
-					// add one node for each
-					// function definition
-					if (filedbout != NULL)
-						fputs(
-						    sLine,
-						    filedbout);
-					replendline(sLine);
-					sSub = &sLine[2];
-					iErr = ttreeaddnode(
-					    ptree, sSub,
-					    sfilename);
-					break;
+			case '$':
+				// add one node for each
+				// function definition
+				if (filedbout != NULL)
+					fputs(
+					    sLine,
+					    filedbout);
+				replendline(sLine);
+				sSub = &sLine[2];
+				iErr = ttreeaddnode(
+				    ptree, sSub,
+				    sfilename);
+				break;
 
-				case '`':
-					if (filedbout != NULL)
-						fputs(
-						    sLine,
-						    filedbout);
-					break;
-
-				default:
-					break;
-				}
+			case '`':
+				if (filedbout != NULL)
+					fputs(
+					    sLine,
+					    filedbout);
 				break;
 
 			default:
 				break;
 			}
-		}
+			break;
 
-		if (lineidx == 0) {
-			printf("\nInput file is empty\n");
-			iErr = -1;
+		default:
+			break;
 		}
+	}
 
-		if (fclose(filein) != 0) {
-			printf("\nError while closing input "
-			       "file\n");
-			iErr = -1;
-		}
+	if (lineidx == 0) {
+		printf("\nInput file is empty\n");
+		iErr = -1;
+	}
 
-		if (filedbout != NULL &&
-		    fclose(filedbout) != 0) {
-			printf("\nError while closing "
-			       "shortened cscope db file\n");
-			iErr = -1;
-		}
+	if (fclose(filein) != 0) {
+		printf("\nError while closing input "
+		       "file\n");
+		iErr = -1;
+	}
+
+	if (filedbout != NULL &&
+	    fclose(filedbout) != 0) {
+		printf("\nError while closing "
+		       "shortened cscope db file\n");
+		iErr = -1;
 	}
 
 	if (iErr == 0) {
