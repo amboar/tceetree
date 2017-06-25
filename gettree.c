@@ -62,15 +62,14 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 		printf("\nError while opening input file\n");
 		return -1;
 	}
-	if (iErr == 0) {
-		filedbout = NULL;
-		if (pparam->shortdbfile[0] != 0) {
-			filedbout = fopen(pparam->shortdbfile, "w");
-			if (filedbout == NULL) {
-				printf("\nError while opening "
-				       "shortened cscope db file\n");
-				iErr = -1;
-			}
+
+	filedbout = NULL;
+	if (pparam->shortdbfile[0] != 0) {
+		filedbout = fopen(pparam->shortdbfile, "w");
+		if (filedbout == NULL) {
+			printf("\nError while opening "
+			       "shortened cscope db file\n");
+			iErr = -1;
 		}
 	}
 
