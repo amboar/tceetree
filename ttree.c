@@ -72,15 +72,12 @@ int ttreeaddnode(ttree_t *ptree, char *funname, char *filename)
 	if (ttreefindnode(ptree, funname, filename) != NULL)
 		return 0;
 
-	// only if node does not exist yet
-	pnode = (ttreenode_t *)malloc(sizeof(ttreenode_t));
+	pnode = calloc(1, sizeof(ttreenode_t));
 	if (!pnode) {
 		printf("\nMemory allocation error\n");
 		return -1;
 	}
 
-	// initialize all node data bytes to 0
-	memset(pnode, 0, sizeof(ttreenode_t));
 	iErr = slibcpy(&pnode->funname, funname, -1);
 	if (iErr != 0)
 		return iErr;
