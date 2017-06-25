@@ -106,30 +106,32 @@ int ttreeaddbranch(ttree_t *ptree, ttreenode_t *caller, ttreenode_t *callee,
 
 	if (caller == NULL || callee == NULL) {
 		printf("\nTrying to make a branch with NULL nodes\n");
-		iErr = -1;
-	} else if (ttreefindbranch(ptree, caller, callee, filename, NULL) ==
-		   NULL) {
-		// only if branch does not exist yet
-		pbranch = (ttreebranch_t *)malloc(sizeof(ttreebranch_t));
-		if (!pbranch) {
-			printf("\nMemory allocation error\n");
-			iErr = -1;
-		} else {
-			// initialize all branch data bytes to 0
-			memset(pbranch, 0, sizeof(ttreebranch_t));
-			pbranch->parent = caller;
-			pbranch->child = callee;
-			iErr = slibcpy(&pbranch->filename, filename, -1);
-			if (iErr == 0) {
-				if (ptree->lastbranch) {
-					ptree->lastbranch->next = pbranch;
-					ptree->lastbranch = pbranch;
-				} else {
-					ptree->firstbranch = pbranch;
-					ptree->lastbranch = pbranch;
-				}
-			}
-		}
+		return -1;
+	}
+
+	if (ttreefindbranch(ptree, caller, callee, filename, NULL) != NULL)
+		return 0;
+
+	// only if branch does not exist yet
+	pbranch = calloc(1, sizeof(ttreebranch_t));
+	if (!pbranch) {
+		printf("\nMemory allocation error\n");
+		return -1;
+	}
+
+	// initialize all branch data bytes to 0
+	pbranch->parent = caller;
+	pbranch->child = callee;
+	iErr = slibcpy(&pbranch->filename, filename, -1);
+	if (iErr != 0)
+		return iErr;
+
+	if (ptree->lastbranch) {
+		ptree->lastbranch->next = pbranch;
+		ptree->lastbranch = pbranch;
+	} else {
+		ptree->firstbranch = pbranch;
+		ptree->lastbranch = pbranch;
 	}
 
 	return iErr;
