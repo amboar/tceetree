@@ -138,12 +138,6 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 		iErr = -1;
 	}
 
-	if (fclose(filein) != 0) {
-		printf("\nError while closing input "
-		       "file\n");
-		iErr = -1;
-	}
-
 	if (filedbout != NULL && fclose(filedbout) != 0) {
 		printf("\nError while closing "
 		       "shortened cscope db file\n");
@@ -154,140 +148,141 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 		goto cleanup;
 
 	/* Get all Branches */
-	filein = fopen(pparam->infile, "r");
-	if (filein == NULL) {
-		printf("\nError while opening input file\n");
+	if (fseek(filein, 0, SEEK_SET) != 0) {
+		printf("\nError seeking to beginning of input file\n");
 		iErr = -1;
-	} else {
-		if (pparam->verbose)
-			printf("\n");
-		lineidx = 0;
-		while (iErr == 0 &&
-		       fgets(sLine, MAXLINEF, filein) != NULL) {
-			if (pparam->verbose) {
-				lineidx++;
-				printf("Getting tree branches... line "
-				       "%ld\r",
-				       lineidx);
-			}
-			switch (sLine[0]) {
-			case '\t':
-				switch (sLine[1]) {
-				case '@':
-					// get again filename where
-					// caller is defined
-					replendline(sLine);
-					sSub = &sLine[2];
-					iErr = slibcpy(&sfilename, sSub,
-						       -1);
-					break;
+		goto cleanup;
+	}
 
-				case '$':
-					// get the name of caller
-					// function
-					replendline(sLine);
-					sSub = &sLine[2];
-					iErr =
-					    slibcpy(&scaller, sSub, -1);
-					break;
+	if (pparam->verbose)
+		printf("\n");
 
-				case '`':
-					replendline(sLine);
-					sSub = &sLine[2];
-					if (sfilename) {
-						// find the caller
+	lineidx = 0;
+	while (iErr == 0 &&
+	       fgets(sLine, MAXLINEF, filein) != NULL) {
+		if (pparam->verbose) {
+			lineidx++;
+			printf("Getting tree branches... line "
+			       "%ld\r",
+			       lineidx);
+		}
+		switch (sLine[0]) {
+		case '\t':
+			switch (sLine[1]) {
+			case '@':
+				// get again filename where
+				// caller is defined
+				replendline(sLine);
+				sSub = &sLine[2];
+				iErr = slibcpy(&sfilename, sSub,
+					       -1);
+				break;
+
+			case '$':
+				// get the name of caller
+				// function
+				replendline(sLine);
+				sSub = &sLine[2];
+				iErr =
+				    slibcpy(&scaller, sSub, -1);
+				break;
+
+			case '`':
+				replendline(sLine);
+				sSub = &sLine[2];
+				if (sfilename) {
+					// find the caller
+					// function node
+					ncaller = ttreefindnode(
+					    ptree, scaller,
+					    sfilename);
+					if (ncaller != NULL) {
+						// find the
+						// callee
 						// function node
-						ncaller = ttreefindnode(
-						    ptree, scaller,
-						    sfilename);
-						if (ncaller != NULL) {
-							// find the
+						ncallee =
+						    ttreefindnode(
+							ptree,
+							sSub,
+							NULL);
+						if (ncallee ==
+						    NULL) {
+							// could
+							// not
+							// find
+							// the
 							// callee
-							// function node
-							ncallee =
-							    ttreefindnode(
-								ptree,
-								sSub,
-								NULL);
-							if (ncallee ==
-							    NULL) {
-								// could
-								// not
-								// find
-								// the
-								// callee
-								// function:
-								// it
-								// must
-								// be a
-								// library
-								// function:
-								// create
-								// its
-								// node
-								// now
-								iErr = ttreeaddnode(
-								    ptree,
-								    sSub,
-								    NULL);
-								if (iErr ==
-								    0)
-									ncallee =
-									    ptree
-										->lastnode;
-							}
-							// add branch
-							if (iErr == 0)
-								iErr = ttreeaddbranch(
-								    ptree,
-								    ncaller,
-								    ncallee,
-								    sfilename);
+							// function:
+							// it
+							// must
+							// be a
+							// library
+							// function:
+							// create
+							// its
+							// node
+							// now
+							iErr = ttreeaddnode(
+							    ptree,
+							    sSub,
+							    NULL);
+							if (iErr ==
+							    0)
+								ncallee =
+								    ptree
+									->lastnode;
 						}
-						/* Comment here: better
-						to go on; it may happen
-						to come
-						 * here in cases like:
-						#define FUN() funct(a,
-						b)
-						else
-						{
-							// this should
-						never happen
-							printf("\nCaller
-						function node not
-						found\n");
-							iErr = -1;
-						}
-						*/
-					} else {
-						printf("\nFilename "
-						       "where the call "
-						       "is has not "
-						       "been found\n");
+						// add branch
+						if (iErr == 0)
+							iErr = ttreeaddbranch(
+							    ptree,
+							    ncaller,
+							    ncallee,
+							    sfilename);
+					}
+					/* Comment here: better
+					to go on; it may happen
+					to come
+					 * here in cases like:
+					#define FUN() funct(a,
+					b)
+					else
+					{
+						// this should
+					never happen
+						printf("\nCaller
+					function node not
+					found\n");
 						iErr = -1;
 					}
-					break;
-
-				default:
-					break;
+					*/
+				} else {
+					printf("\nFilename "
+					       "where the call "
+					       "is has not "
+					       "been found\n");
+					iErr = -1;
 				}
 				break;
 
 			default:
 				break;
 			}
-		}
+			break;
 
-		if (fclose(filein) != 0) {
-			printf("\nError while closing input file\n");
-			iErr = -1;
+		default:
+			break;
 		}
 	}
 
 cleanup:
 	free(sfilename);
 	free(scaller);
+
+	if (fclose(filein) != 0) {
+		printf("\nError while closing input file\n");
+		iErr = -1;
+	}
 
 	return iErr;
 
