@@ -77,6 +77,7 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 	lineidx = 0;
 	if (pparam->verbose)
 		printf("\n");
+
 	while (iErr == 0 &&
 	       fgets(sLine, MAXLINEF, filein) != NULL) {
 		lineidx++;
@@ -279,15 +280,11 @@ cleanup:
 	free(sfilename);
 	free(scaller);
 
+cleanup_filein:
 	if (fclose(filein) != 0) {
 		printf("\nError while closing input file\n");
 		iErr = -1;
 	}
-
-	return iErr;
-
-cleanup_filein:
-	fclose(filein);
 
 	return iErr;
 }
