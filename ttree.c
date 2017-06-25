@@ -76,21 +76,21 @@ int ttreeaddnode(ttree_t *ptree, char *funname, char *filename)
 	pnode = (ttreenode_t *)malloc(sizeof(ttreenode_t));
 	if (!pnode) {
 		printf("\nMemory allocation error\n");
-		iErr = -1;
-	} else {
-		// initialize all node data bytes to 0
-		memset(pnode, 0, sizeof(ttreenode_t));
-		iErr = slibcpy(&pnode->funname, funname, -1);
+		return -1;
+	}
+
+	// initialize all node data bytes to 0
+	memset(pnode, 0, sizeof(ttreenode_t));
+	iErr = slibcpy(&pnode->funname, funname, -1);
+	if (iErr == 0) {
+		iErr = slibcpy(&pnode->filename, filename, -1);
 		if (iErr == 0) {
-			iErr = slibcpy(&pnode->filename, filename, -1);
-			if (iErr == 0) {
-				if (ptree->lastnode) {
-					ptree->lastnode->next = pnode;
-					ptree->lastnode = pnode;
-				} else {
-					ptree->firstnode = pnode;
-					ptree->lastnode = pnode;
-				}
+			if (ptree->lastnode) {
+				ptree->lastnode->next = pnode;
+				ptree->lastnode = pnode;
+			} else {
+				ptree->firstnode = pnode;
+				ptree->lastnode = pnode;
 			}
 		}
 	}
