@@ -50,7 +50,7 @@ char *hlstyles[HSTYLESNO] = {
 };
 
 // start graph
-int outopen_gra(ttree_t *ptree, treeparam_t *pparam)
+int outopen_gra(ttree_t *ptree __attribute__((unused)), treeparam_t *pparam)
 {
 	int iErr = 0, iEbase;
 	char *sbasename = NULL;
@@ -74,7 +74,8 @@ int outopen_gra(ttree_t *ptree, treeparam_t *pparam)
 }
 
 // end graph
-int outclose_gra(ttree_t *ptree, treeparam_t *pparam)
+int outclose_gra(ttree_t *ptree __attribute__((unused)),
+		 treeparam_t *pparam __attribute__((unused)))
 {
 	int iErr = 0;
 
