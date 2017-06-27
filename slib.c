@@ -23,6 +23,7 @@
  * THE SOFTWARE.
  */
 
+#include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,25 +57,28 @@ int slibcpy(char **sout, char const *sin, int errval)
 // extract a file base name (with or without extension) from a full path name
 int slibbasename(char **sbase, char *spath, int withext)
 {
-	int i, iErr = 0;
+	char *bpath, *bname;
+
+	free(*sbase);
 
 	if (spath == NULL) {
 		*sbase = NULL; // NULL produces NULL
-	} else {
-		for (i = strlen(spath) - 1; i >= 0; i--)
-			if (spath[i] == '\\' || spath[i] == '/')
-				break;
-
-		iErr = slibcpy(sbase, spath + i + 1, -1);
-
-		if (iErr == 0 && !withext) {
-			for (i = 0; i < (int)strlen(*sbase); i++)
-				if ((*sbase)[i] == '.') {
-					(*sbase)[i] = 0;
-					break;
-				}
-		}
+		return 0;
 	}
 
-	return iErr;
+	bpath = strdup(spath);
+	if (!bpath)
+		return -1;
+
+	bname = basename(bpath);
+	if (!withext) {
+		char *dot = strrchr(bname, '.');
+
+		if (dot)
+			*dot = '\0';
+	}
+
+	*sbase = bname;
+
+	return 0;
 }
