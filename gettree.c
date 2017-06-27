@@ -114,8 +114,7 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 	}
 
 	if (filedbout != NULL && fclose(filedbout) != 0) {
-		printf("\nError while closing "
-		       "shortened cscope db file\n");
+		printf("\nError while closing shortened cscope db file\n");
 		iErr = -1;
 	}
 
@@ -156,70 +155,31 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 			break;
 
 		case '`':
-			if (sfilename) {
-				// find the caller function node
-				ncaller = ttreefindnode(ptree, scaller,
-							sfilename);
-				if (ncaller != NULL) {
-					// find the
-					// callee
-					// function node
-					ncallee = ttreefindnode(
-					    ptree, &sLine[2], NULL);
-					if (ncallee == NULL) {
-						// could
-						// not
-						// find
-						// the
-						// callee
-						// function:
-						// it
-						// must
-						// be a
-						// library
-						// function:
-						// create
-						// its
-						// node
-						// now
-						iErr = ttreeaddnode(
-						    ptree, &sLine[2], NULL);
-						if (iErr == 0)
-							ncallee =
-							    ptree
-								->lastnode;
-					}
-					// add branch
-					if (iErr == 0)
-						iErr = ttreeaddbranch(
-						    ptree, ncaller,
-						    ncallee, sfilename);
-				}
-				/* Comment here: better
-				to go on; it may happen
-				to come
-				 * here in cases like:
-				#define FUN() funct(a,
-				b)
-				else
-				{
-					// this should
-				never happen
-					printf("\nCaller
-				function node not
-				found\n");
-					iErr = -1;
-				}
-				*/
-			} else {
-				printf("\nFilename "
-				       "where the call "
-				       "is has not "
-				       "been found\n");
+			if (!*sfilename) {
+				printf("\nFilename where the call is has not been found\n");
 				iErr = -1;
+				break;
 			}
-			break;
 
+			// find the caller function node
+			ncaller = ttreefindnode(ptree, scaller, sfilename);
+			if (ncaller == NULL)
+				break;
+
+			// find the callee function node
+			ncallee = ttreefindnode(ptree, &sLine[2], NULL);
+			if (ncallee == NULL) {
+				// could not find the callee function: it must
+				// be a library function: create its node now
+				iErr = ttreeaddnode(ptree, &sLine[2], NULL);
+				if (iErr == 0)
+					ncallee = ptree->lastnode;
+			}
+			// add branch
+			if (iErr == 0)
+				iErr = ttreeaddbranch(ptree, ncaller, ncallee,
+						      sfilename);
+			break;
 		default:
 			break;
 		}
