@@ -36,10 +36,7 @@
 // init tree
 void ttreeinit(ttree_t *ptree)
 {
-	ptree->firstnode = NULL;
-	ptree->lastnode = NULL;
-	ptree->firstbranch = NULL;
-	ptree->lastbranch = NULL;
+	memset(ptree, '\0', sizeof(*ptree));
 }
 
 // free tree memory
