@@ -115,6 +115,9 @@ int outbranch(ttreebranch_t *pbranch, treeparam_t *pparam, int colr)
 	int iErr = 0;
 	int i;
 
+	if (!pbranch)
+		return -1;
+
 	if (pbranch && pbranch->outdone)
 		return iErr;
 
