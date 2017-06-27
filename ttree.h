@@ -50,14 +50,13 @@ typedef struct ttreebranch_st {
 
 typedef struct ttree_st {
 	ttreenode_t *firstnode;     // first node of linear list
-	ttreenode_t *lastnode;      // last node of linear list
 	ttreebranch_t *firstbranch; // first branch of linear list
 	ttreebranch_t *lastbranch;  // last branch of linear list
 } ttree_t;
 
 void ttreeinit(ttree_t *ptree);
 void ttreefree(ttree_t *ptree);
-int ttreeaddnode(ttree_t *ptree, char *funname, char *filename);
+ttreenode_t *ttreeaddnode(ttree_t *ptree, char *funname, char *filename);
 int ttreeaddbranch(ttree_t *ptree, ttreenode_t *caller, ttreenode_t *callee,
 		   char *filename);
 ttreenode_t *ttreefindnode(ttree_t *ptree, char *funname, char *filename);

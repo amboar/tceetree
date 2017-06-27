@@ -99,8 +99,7 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 
 		case '$':
 			// add one node for each function definition
-			iErr = ttreeaddnode(ptree, &sLine[2], sfilename);
-			if (iErr != 0)
+			if (!ttreeaddnode(ptree, &sLine[2], sfilename))
 				goto cleanup_filein;
 			break;
 		default:
@@ -171,9 +170,7 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 			if (ncallee == NULL) {
 				// could not find the callee function: it must
 				// be a library function: create its node now
-				iErr = ttreeaddnode(ptree, &sLine[2], NULL);
-				if (iErr == 0)
-					ncallee = ptree->lastnode;
+				ncallee = ttreeaddnode(ptree, &sLine[2], NULL);
 			}
 			// add branch
 			if (iErr == 0)

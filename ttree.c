@@ -61,18 +61,17 @@ void ttreefree(ttree_t *ptree)
 }
 
 // add a new node (function) to tree
-int ttreeaddnode(ttree_t *ptree, char *funname, char *filename)
+ttreenode_t *ttreeaddnode(ttree_t *ptree, char *funname, char *filename)
 {
-	int iErr = 0;
 	ttreenode_t *pnode;
 
-	if (ttreefindnode(ptree, funname, filename) != NULL)
-		return 0;
+	if ((pnode = ttreefindnode(ptree, funname, filename)))
+		return pnode;
 
 	pnode = calloc(1, sizeof(ttreenode_t));
 	if (!pnode) {
 		printf("\nMemory allocation error\n");
-		return -1;
+		return NULL;
 	}
 
 	pnode->funname = strdup(funname);
@@ -85,15 +84,10 @@ int ttreeaddnode(ttree_t *ptree, char *funname, char *filename)
 			goto cleanup_funname;
 	}
 
-	if (ptree->lastnode) {
-		ptree->lastnode->next = pnode;
-		ptree->lastnode = pnode;
-	} else {
-		ptree->firstnode = pnode;
-		ptree->lastnode = pnode;
-	}
+	pnode->next = ptree->firstnode;
+	ptree->firstnode = pnode;
 
-	return 0;
+	return pnode;
 
 cleanup_funname:
 	free(pnode->funname);
@@ -101,7 +95,7 @@ cleanup_funname:
 cleanup_pnode:
 	free(pnode);
 
-	return -1;
+	return NULL;
 }
 
 // add a new branch (caller function node to callee function node connection)
