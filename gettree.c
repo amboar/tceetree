@@ -41,7 +41,6 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 	int iErr = 0;
 	FILE *filein, *filedbout;
 	char sLine[MAXLINEF];
-	char *sSub;
 	char *sfilename = NULL;
 	char *scaller = NULL;
 	ttreenode_t *ncaller, *ncallee;
@@ -83,8 +82,7 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 			if (filedbout != NULL)
 				fputs(sLine, filedbout);
 			*strchrnul(sLine, '\n') = '\0';
-			sSub = &sLine[2];
-			iErr = slibcpy(&sfilename, sSub, -1);
+			iErr = slibcpy(&sfilename, &sLine[2], -1);
 			break;
 
 		case '$':
@@ -92,8 +90,7 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 			if (filedbout != NULL)
 				fputs(sLine, filedbout);
 			*strchrnul(sLine, '\n') = '\0';
-			sSub = &sLine[2];
-			iErr = ttreeaddnode(ptree, sSub, sfilename);
+			iErr = ttreeaddnode(ptree, &sLine[2], sfilename);
 			break;
 
 		case '`':
@@ -144,20 +141,17 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 		case '@':
 			// get again filename where caller is defined
 			*strchrnul(sLine, '\n') = '\0';
-			sSub = &sLine[2];
-			iErr = slibcpy(&sfilename, sSub, -1);
+			iErr = slibcpy(&sfilename, &sLine[2], -1);
 			break;
 
 		case '$':
 			// get the name of caller function
 			*strchrnul(sLine, '\n') = '\0';
-			sSub = &sLine[2];
-			iErr = slibcpy(&scaller, sSub, -1);
+			iErr = slibcpy(&scaller, &sLine[2], -1);
 			break;
 
 		case '`':
 			*strchrnul(sLine, '\n') = '\0';
-			sSub = &sLine[2];
 			if (sfilename) {
 				// find the caller function node
 				ncaller = ttreefindnode(ptree, scaller,
@@ -167,7 +161,7 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 					// callee
 					// function node
 					ncallee = ttreefindnode(
-					    ptree, sSub, NULL);
+					    ptree, &sLine[2], NULL);
 					if (ncallee == NULL) {
 						// could
 						// not
@@ -185,7 +179,7 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 						// node
 						// now
 						iErr = ttreeaddnode(
-						    ptree, sSub, NULL);
+						    ptree, &sLine[2], NULL);
 						if (iErr == 0)
 							ncallee =
 							    ptree
