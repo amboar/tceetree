@@ -24,6 +24,7 @@
  */
 
 #define _GNU_SOURCE
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,7 +32,6 @@
 #ifndef _ALL_IN_ONE
 #include "defines.h"
 #include "gettree.h"
-#include "slib.h"
 #endif // _ALL_IN_ONE
 
 #define MAXLINEF 5000 // maximum length of a line in cscope.out
@@ -40,25 +40,29 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 {
 	int iErr = 0;
 	FILE *filein, *filedbout;
-	char sLine[MAXLINEF];
-	char *sfilename = NULL;
-	char *scaller = NULL;
+	char *sLine, *sfilename, *scaller;
 	ttreenode_t *ncaller, *ncallee;
 	long lineidx;
+
+	sLine = malloc(3 * MAXLINEF);
+	if (!sLine)
+		return -1;
+
+	sfilename = sLine + 1 * MAXLINEF;
+	scaller = sLine + 2 * MAXLINEF;
 
 	/* Get all Nodes */
 	filein = fopen(pparam->infile, "r");
 	if (filein == NULL) {
 		printf("\nError while opening input file\n");
-		return -1;
+		goto cleanup_sLine;
 	}
 
 	filedbout = NULL;
 	if (pparam->shortdbfile[0] != 0) {
 		filedbout = fopen(pparam->shortdbfile, "w");
 		if (filedbout == NULL) {
-			printf("\nError while opening "
-			       "shortened cscope db file\n");
+			printf("\nError while opening shortened cscope db file\n");
 			iErr = -1;
 			goto cleanup_filein;
 		}
@@ -69,6 +73,8 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 		printf("\n");
 
 	while (iErr == 0 && fgets(sLine, MAXLINEF, filein) != NULL) {
+		bool interesting;
+
 		lineidx++;
 		if (pparam->verbose)
 			printf("Getting tree nodes... line %ld\r", lineidx);
@@ -76,28 +82,27 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 		if (sLine[0] != '\t')
 			continue;
 
+
+		interesting = sLine[1] == '@' ||
+			      sLine[1] == '$' ||
+			      sLine[1] == '`';
+		if (filedbout && interesting)
+			fputs(sLine, filedbout);
+
+		*strchrnul(sLine, '\n') = '\0';
+
 		switch (sLine[1]) {
 		case '@':
 			// filename where function is defined
-			if (filedbout != NULL)
-				fputs(sLine, filedbout);
-			*strchrnul(sLine, '\n') = '\0';
-			iErr = slibcpy(&sfilename, &sLine[2], -1);
+			strcpy(sfilename, &sLine[2]);
 			break;
 
 		case '$':
 			// add one node for each function definition
-			if (filedbout != NULL)
-				fputs(sLine, filedbout);
-			*strchrnul(sLine, '\n') = '\0';
 			iErr = ttreeaddnode(ptree, &sLine[2], sfilename);
+			if (iErr != 0)
+				goto cleanup_filein;
 			break;
-
-		case '`':
-			if (filedbout != NULL)
-				fputs(sLine, filedbout);
-			break;
-
 		default:
 			break;
 		}
@@ -115,13 +120,13 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 	}
 
 	if (iErr != 0)
-		goto cleanup;
+		goto cleanup_filein;
 
 	/* Get all Branches */
 	if (fseek(filein, 0, SEEK_SET) != 0) {
 		printf("\nError seeking to beginning of input file\n");
 		iErr = -1;
-		goto cleanup;
+		goto cleanup_filein;
 	}
 
 	if (pparam->verbose)
@@ -137,21 +142,20 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 		if (sLine[0] != '\t')
 			continue;
 
+		*strchrnul(sLine, '\n') = '\0';
+
 		switch (sLine[1]) {
 		case '@':
 			// get again filename where caller is defined
-			*strchrnul(sLine, '\n') = '\0';
-			iErr = slibcpy(&sfilename, &sLine[2], -1);
+			strcpy(sfilename, &sLine[2]);
 			break;
 
 		case '$':
 			// get the name of caller function
-			*strchrnul(sLine, '\n') = '\0';
-			iErr = slibcpy(&scaller, &sLine[2], -1);
+			strcpy(scaller, &sLine[2]);
 			break;
 
 		case '`':
-			*strchrnul(sLine, '\n') = '\0';
 			if (sfilename) {
 				// find the caller function node
 				ncaller = ttreefindnode(ptree, scaller,
@@ -219,17 +223,19 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 		default:
 			break;
 		}
-	}
 
-cleanup:
-	free(sfilename);
-	free(scaller);
+		if (iErr != 0)
+			break;
+	}
 
 cleanup_filein:
 	if (fclose(filein) != 0) {
 		printf("\nError while closing input file\n");
 		iErr = -1;
 	}
+
+cleanup_sLine:
+	free(sLine);
 
 	return iErr;
 }
