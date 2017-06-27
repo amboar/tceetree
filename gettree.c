@@ -23,6 +23,7 @@
  * THE SOFTWARE.
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,16 +35,6 @@
 #endif // _ALL_IN_ONE
 
 #define MAXLINEF 5000 // maximum length of a line in cscope.out
-
-void replendline(char *sline)
-{
-	int i;
-
-	for (i = 2; i < MAXLINEF && sline[i] != 0; i++) {
-		if (sline[i] == '\n')
-			sline[i] = 0;
-	}
-}
 
 int gettree(ttree_t *ptree, treeparam_t *pparam)
 {
@@ -91,7 +82,7 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 			// filename where function is defined
 			if (filedbout != NULL)
 				fputs(sLine, filedbout);
-			replendline(sLine);
+			*strchrnul(sLine, '\n') = '\0';
 			sSub = &sLine[2];
 			iErr = slibcpy(&sfilename, sSub, -1);
 			break;
@@ -100,7 +91,7 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 			// add one node for each function definition
 			if (filedbout != NULL)
 				fputs(sLine, filedbout);
-			replendline(sLine);
+			*strchrnul(sLine, '\n') = '\0';
 			sSub = &sLine[2];
 			iErr = ttreeaddnode(ptree, sSub, sfilename);
 			break;
@@ -152,20 +143,20 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 		switch (sLine[1]) {
 		case '@':
 			// get again filename where caller is defined
-			replendline(sLine);
+			*strchrnul(sLine, '\n') = '\0';
 			sSub = &sLine[2];
 			iErr = slibcpy(&sfilename, sSub, -1);
 			break;
 
 		case '$':
 			// get the name of caller function
-			replendline(sLine);
+			*strchrnul(sLine, '\n') = '\0';
 			sSub = &sLine[2];
 			iErr = slibcpy(&scaller, sSub, -1);
 			break;
 
 		case '`':
-			replendline(sLine);
+			*strchrnul(sLine, '\n') = '\0';
 			sSub = &sLine[2];
 			if (sfilename) {
 				// find the caller function node
