@@ -78,13 +78,15 @@ int ttreeaddnode(ttree_t *ptree, char *funname, char *filename)
 		return -1;
 	}
 
-	iErr = slibcpy(&pnode->funname, funname, -1);
-	if (iErr != 0)
-		return iErr;
+	pnode->funname = strdup(funname);
+	if (!pnode->funname)
+		goto cleanup_pnode;
 
-	iErr = slibcpy(&pnode->filename, filename, -1);
-	if (iErr != 0)
-		return iErr;
+	if (filename) {
+		pnode->filename = strdup(filename);
+		if (!pnode->filename)
+			goto cleanup_funname;
+	}
 
 	if (ptree->lastnode) {
 		ptree->lastnode->next = pnode;
@@ -95,6 +97,14 @@ int ttreeaddnode(ttree_t *ptree, char *funname, char *filename)
 	}
 
 	return 0;
+
+cleanup_funname:
+	free(pnode->funname);
+
+cleanup_pnode:
+	free(pnode);
+
+	return -1;
 }
 
 // add a new branch (caller function node to callee function node connection)
@@ -122,9 +132,11 @@ int ttreeaddbranch(ttree_t *ptree, ttreenode_t *caller, ttreenode_t *callee,
 	// initialize all branch data bytes to 0
 	pbranch->parent = caller;
 	pbranch->child = callee;
-	iErr = slibcpy(&pbranch->filename, filename, -1);
-	if (iErr != 0)
-		return iErr;
+	pbranch->filename = strdup(filename);
+	if (!pbranch->filename) {
+		iErr = -1;
+		goto cleanup_pbranch;
+	}
 
 	if (ptree->lastbranch) {
 		ptree->lastbranch->next = pbranch;
@@ -133,6 +145,11 @@ int ttreeaddbranch(ttree_t *ptree, ttreenode_t *caller, ttreenode_t *callee,
 		ptree->firstbranch = pbranch;
 		ptree->lastbranch = pbranch;
 	}
+
+	return iErr;
+
+cleanup_pbranch:
+	free(pbranch);
 
 	return iErr;
 }
