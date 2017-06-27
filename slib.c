@@ -35,21 +35,19 @@
 // copy string with automatic memory allocation
 int slibcpy(char **sout, char const *sin, int errval)
 {
-	free(*sout); // Pay attention to load *sout with NULL if it has never
-		     // been
-		     // allocated before
+	// Pay attention to load *sout with NULL if it has never been allocated
+	// before
+	free(*sout);
 
 	if (sin == NULL) {
 		*sout = NULL; // NULL produces NULL
-	} else {
-		*sout = (char *)calloc(strlen(sin) + 1, sizeof(char));
-		if (*sout == NULL) {
-			printf("\nMemory allocation error\n");
-			return errval; // the error value is specified as input
-				       // parameter
-		}
+		return 0;
+	}
 
-		strcpy(*sout, sin);
+	*sout = strdup(sin);
+	if (*sout == NULL) {
+		printf("\nMemory allocation error\n");
+		return errval;
 	}
 
 	return 0;
