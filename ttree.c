@@ -23,6 +23,7 @@
  * THE SOFTWARE.
  */
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,17 +34,40 @@
 #include "ttree.h"
 #endif // _ALL_IN_ONE
 
+#include <ccan/container_of/container_of.h>
+#include <ccan/likely/likely.h>
+#include <ccan/list/list.h>
+#include <ccan/str/str.h>
 #include <ccan/tal/tal.h>
 #include <ccan/tal/str/str.h>
 
 // init tree
-ttree_t *ttreeinit()
+ttree_t *ttreeinit(void)
 {
-	return talz(NULL, ttree_t);
+	ttree_t *ptree = talz(NULL, ttree_t);
+	if (!ptree)
+		return NULL;
+
+	strmap_init(&ptree->node_files);
+	strmap_init(&ptree->node_funcs);
+	strmap_init(&ptree->branch_exact);
+	strmap_init(&ptree->branch_callers);
+	strmap_init(&ptree->branch_callees);
+
+	return ptree;
 }
 
 void ttreedestroy(ttree_t *ptree)
 {
+	/* FIXME: Memory leak: Iterate to clear nested map */
+	strmap_clear(&ptree->node_files);
+	strmap_clear(&ptree->node_funcs);
+
+	/* FIXME: Memory leak: Iterate to clear nested map */
+	strmap_clear(&ptree->branch_exact);
+	/* FIXME: Memory leak: Iterate to clear nested map */
+	strmap_clear(&ptree->branch_callers);
+	strmap_clear(&ptree->branch_callees);
 	tal_free(ptree);
 }
 
@@ -51,6 +75,7 @@ void ttreedestroy(ttree_t *ptree)
 ttreenode_t *ttreeaddnode(ttree_t *ptree, char *funname, char *filename)
 {
 	ttreenode_t *pnode;
+	ttreefile_t *pfile;
 
 	if ((pnode = ttreefindnode(ptree, funname, filename)))
 		return pnode;
@@ -69,12 +94,38 @@ ttreenode_t *ttreeaddnode(ttree_t *ptree, char *funname, char *filename)
 		pnode->filename = tal_strdup(pnode, filename);
 		if (!pnode->filename)
 			goto cleanup_pnode;
+
+		pfile = strmap_get(&ptree->node_files, pnode->filename);
+		if (!pfile) {
+			pfile = talz(ptree, ttreefile_t);
+			if (!pfile)
+				goto cleanup_pnode;
+
+			strmap_init(&pfile->nodes);
+			if (!strmap_add(&ptree->node_files, pnode->filename, pfile))
+				goto cleanup_pfile;
+		}
+
+		if (!strmap_add(&pfile->nodes, pnode->funname, pnode))
+			goto cleanup_pnode;
 	}
 
-	pnode->next = ptree->firstnode;
-	ptree->firstnode = pnode;
+	if (!strmap_get(&ptree->node_funcs, pnode->funname))
+		if (!strmap_add(&ptree->node_funcs, pnode->funname, pnode))
+			goto cleanup_pnode;
+
+	if (unlikely(!ptree->firstnode))
+		ptree->firstnode = pnode;
+
+	if (likely(ptree->lastnode))
+		ptree->lastnode->next = pnode;
+
+	ptree->lastnode = pnode;
 
 	return pnode;
+
+cleanup_pfile:
+	tal_free(pfile);
 
 cleanup_pnode:
 	tal_free(pnode);
@@ -88,6 +139,8 @@ int ttreeaddbranch(ttree_t *ptree, ttreenode_t *caller, ttreenode_t *callee,
 {
 	int iErr = 0;
 	ttreebranch_t *pbranch;
+	ttreeparent_t *parent;
+	ttreechild_t *child;
 
 	if (caller == NULL || callee == NULL) {
 		printf("\nTrying to make a branch with NULL nodes\n");
@@ -104,17 +157,113 @@ int ttreeaddbranch(ttree_t *ptree, ttreenode_t *caller, ttreenode_t *callee,
 		return -1;
 	}
 
-	// initialize all branch data bytes to 0
-	pbranch->parent = caller;
-	pbranch->child = callee;
-	pbranch->filename = tal_strdup(pbranch, filename);
-	if (!pbranch->filename) {
+	parent = &pbranch->parent;
+	child = &pbranch->child;
+
+	pbranch->parent.filename = tal_strdup(pbranch, filename);
+	if (!pbranch->parent.filename) {
 		iErr = -1;
 		goto cleanup_pbranch;
 	}
 
-	pbranch->next = ptree->firstbranch;
-	ptree->firstbranch = pbranch;
+	parent->node = caller;
+	child->node = callee;
+
+	if (filename && caller && callee) {
+		ttreebranchfile_t *pfile;
+		ttreebranchsource_t *psrc;
+
+		pfile = strmap_get(&ptree->branch_exact, parent->filename);
+		if (!pfile) {
+			pfile = talz(ptree, ttreebranchfile_t);
+			if (!pfile)
+				goto cleanup_pbranch; /* FIXME */
+
+			strmap_init(&pfile->sources);
+
+			if (!strmap_add(&ptree->branch_exact, parent->filename,
+						pfile))
+				goto cleanup_pbranch; /* FIXME */
+		}
+
+		psrc = strmap_get(&pfile->sources, caller->funname);
+		if (!psrc) {
+			psrc = talz(pfile, ttreebranchsource_t);
+			if (!psrc)
+				goto cleanup_pbranch; /* FIXME */
+
+			strmap_init(&psrc->targets);
+
+			if (!strmap_add(&pfile->sources, caller->funname, psrc))
+				goto cleanup_pbranch; /* FIXME */
+		}
+
+		/* Just add it: we know it's not present as the find() failed */
+		if (!strmap_add(&psrc->targets, callee->funname, pbranch))
+			goto cleanup_pbranch; /* FIXME */
+	}
+
+	if (caller) {
+		/*
+		 * Illegal filename for key if file is NULL, that way we can
+		 * still enter the caller in the branch_callers map
+		 */
+		const char *key = filename ? parent->filename : "/";
+		struct list_head *head = NULL;
+		ttreebranchfile_t *pfile;
+
+		pfile = strmap_get(&ptree->branch_callers, key);
+		if (!pfile) {
+			pfile = talz(ptree, ttreebranchfile_t);
+			if (!pfile)
+				goto cleanup_pbranch; /* FIXME */
+
+			strmap_init(&pfile->targets);
+
+			if (!strmap_add(&ptree->branch_callers, key, pfile))
+				goto cleanup_pbranch; /* FIXME */
+
+		}
+
+		head = strmap_get(&pfile->targets, caller->funname);
+		if (!head) {
+			head = talz(ptree, struct list_head);
+			if (!head)
+				goto cleanup_pbranch; /* FIXME */
+
+			list_head_init(head);
+			if (!strmap_add(&pfile->targets, caller->funname, head))
+				goto cleanup_pbranch; /* FIXME */
+		}
+
+		list_add(head, &parent->elem);
+	}
+
+	if (callee) {
+		struct list_head *head;
+
+		head = strmap_get(&ptree->branch_callees, callee->funname);
+		if (!head) {
+			head = talz(ptree, struct list_head);
+			if (!head)
+				goto cleanup_pbranch; /* FIXME */
+
+			list_head_init(head);
+			if (!strmap_add(&ptree->branch_callees, callee->funname,
+					head))
+				goto cleanup_pbranch; /* FIXME */
+		}
+
+		list_add(head, &child->elem);
+	}
+
+	if (unlikely(!ptree->firstbranch))
+		ptree->firstbranch = pbranch;
+
+	if (likely(ptree->lastbranch))
+		ptree->lastbranch->next = pbranch;
+
+	ptree->lastbranch = pbranch;
 
 	return iErr;
 
@@ -129,20 +278,26 @@ cleanup_pbranch:
 ttreenode_t *ttreefindnode(ttree_t *ptree, char *funname, char *filename)
 {
 	ttreenode_t *pnode;
+	ttreefile_t *pfile;
 
 	if (!funname)
 		return NULL;
 
-	pnode = ptree->firstnode;
-	while (pnode != NULL) {
-		if (strcmp(pnode->funname, funname) == 0 &&
-		    (filename == NULL ||
-		     strcmp(pnode->filename, filename) == 0))
-			break;
-		pnode = pnode->next;
+	if (filename) {
+		pfile = strmap_get(&ptree->node_files, filename);
+		if (pfile) {
+			pnode = strmap_get(&pfile->nodes, funname);
+
+			if (pnode)
+				return pnode;
+		}
+	} else {
+		pnode = strmap_get(&ptree->node_funcs, funname);
+		if (pnode)
+			return pnode;
 	}
 
-	return pnode;
+	return NULL;
 }
 
 // find a branch with specified caller, callee and file name and return its
@@ -153,24 +308,81 @@ ttreebranch_t *ttreefindbranch(ttree_t *ptree, ttreenode_t *caller,
 			       ttreenode_t *callee, char *filename,
 			       ttreebranch_t *pstart)
 {
-	ttreebranch_t *pbranch;
-
-	if (pstart == NULL)
-		pbranch = ptree->firstbranch;
-	else
-		pbranch = pstart;
-
 	if (caller == NULL && callee == NULL)
-		pbranch = NULL;
+		return NULL;
 
-	while (pbranch != NULL) {
-		if ((caller == NULL || pbranch->parent == caller) &&
-		    (callee == NULL || pbranch->child == callee) &&
-		    (filename == NULL ||
-		     strcmp(pbranch->filename, filename) == 0))
-			break;
-		pbranch = pbranch->next;
+	if (filename && caller && callee) {
+		ttreebranchfile_t *pfile;
+		ttreebranchsource_t *psrc;
+
+		assert(!pstart);
+
+		pfile = strmap_get(&ptree->branch_exact, filename);
+		if (!pfile)
+			return NULL;
+
+		psrc = strmap_get(&pfile->sources, caller->funname);
+		if (!psrc)
+			return NULL;
+
+		return strmap_get(&psrc->targets, callee->funname);
 	}
 
-	return pbranch;
+	if (caller && !callee) {
+		ttreebranch_t *pbranch;
+		/*
+		 * Illegal filename for key if file is NULL, that way we can
+		 * still enter the caller in the branch_callers map
+		 */
+		const char *key = filename ? filename : "/";
+		ttreebranchfile_t *pfile;
+		struct list_head *head;
+		ttreeparent_t *parent;
+
+		pfile = strmap_get(&ptree->branch_callers, key);
+		if (!pfile)
+			return NULL;
+
+		head = strmap_get(&pfile->targets, caller->funname);
+		if (!head)
+			return NULL;
+
+		parent = (pstart && pstart == ptree->lbranch) ?
+			list_next(head, &pstart->parent, elem) :
+			list_top(head, ttreeparent_t, elem);
+
+		if (!parent)
+			return NULL;
+
+		pbranch = container_of(parent, ttreebranch_t, parent);
+
+		ptree->lbranch = pbranch;
+
+		return pbranch;
+	}
+
+	if (!filename && !caller && callee) {
+		struct list_head *head;
+		ttreebranch_t *pbranch;
+		ttreechild_t *child;
+
+		head = strmap_get(&ptree->branch_callees, callee->funname);
+		if (!head)
+			return NULL;
+
+		child = (pstart && pstart == ptree->lbranch) ?
+			list_next(head, &pstart->child, elem) :
+			list_top(head, ttreechild_t, elem);
+
+		if (!child)
+			return NULL;
+
+		pbranch = container_of(child, ttreebranch_t, child);
+
+		ptree->lbranch = pbranch;
+
+		return pbranch;
+	}
+
+	assert(false && "Unexpected filename/caller/callee combination");
 }

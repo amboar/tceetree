@@ -26,6 +26,9 @@
 #ifndef _TTREE_H
 #define _TTREE_H
 
+#include <ccan/list/list.h>
+#include <ccan/strmap/strmap.h>
+
 typedef struct ttreenode_st *ttreenode_tp;
 typedef struct ttreebranch_st *ttreebranch_tp;
 
@@ -39,18 +42,55 @@ typedef struct ttreenode_st {
 	ttreenode_tp next;  // Next node for linear list access
 } ttreenode_t;
 
-typedef struct ttreebranch_st {
+typedef struct ttreeparent_st {
 	char *filename;      // filename where the call is
-	ttreenode_t *parent; // parent node (calling function)
-	ttreenode_t *child;  // child node (called function)
+	ttreenode_t *node; // parent node (calling function)
+	struct list_node elem;
+} ttreeparent_t;
+
+typedef struct ttreechild_st {
+	ttreenode_t *node;  // child node (called function)
+	struct list_node elem;
+} ttreechild_t;
+
+typedef struct ttreebranch_st {
+	ttreeparent_t parent;
+	ttreechild_t child;
 	int outdone;	 // = 1 when branch output is done
 	int icolor;	  // color for branch (0 = default)
 	ttreebranch_tp next; // Next branch for linear list access
 } ttreebranch_t;
 
+typedef struct ttreebranchsource_st {
+	STRMAP(ttreebranch_t *) targets;
+} ttreebranchsource_t;
+
+typedef struct ttreebranchfile_st {
+	union {
+		STRMAP(ttreebranchsource_t *) sources;
+		STRMAP(struct list_head *) targets;
+	};
+} ttreebranchfile_t;
+
+typedef struct ttreefile_st {
+	STRMAP(ttreenode_t *) nodes;
+} ttreefile_t;
+
+typedef STRMAP(ttreefile_t *) strmap_treefile_p;
+typedef STRMAP(ttreebranchfile_t *) strmap_treebranchfile_p;
+
 typedef struct ttree_st {
 	ttreenode_t *firstnode;     // first node of linear list
+	ttreenode_t *lastnode;
+	STRMAP(ttreefile_t *) node_files;
+	STRMAP(ttreenode_t *) node_funcs;
+
 	ttreebranch_t *firstbranch; // first branch of linear list
+	ttreebranch_t *lastbranch;
+	STRMAP(ttreebranchfile_t *) branch_exact;
+	STRMAP(ttreebranchfile_t *) branch_callers;
+	STRMAP(struct list_head *) branch_callees;
+	ttreebranch_t *lbranch;
 } ttree_t;
 
 ttree_t *ttreeinit(void);

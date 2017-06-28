@@ -125,14 +125,14 @@ int outbranch(ttreebranch_t *pbranch, treeparam_t *pparam, int colr)
 	for (i = 0; i < pparam->excludfno; i++) {
 		// check if library excluded
 		if (strcmp(pparam->excludf[i], TT_LIBRARY) == 0 &&
-		    pbranch->child->filename == NULL)
+		    pbranch->child.node->filename == NULL)
 			return iErr;
 
 		// check if caller or callee function name matches one of those
 		// in the
 		// exclusion list
-		if (strcmp(pbranch->parent->funname, pparam->excludf[i]) == 0 ||
-		    strcmp(pbranch->child->funname, pparam->excludf[i]) == 0)
+		if (strcmp(pbranch->parent.node->funname, pparam->excludf[i]) == 0 ||
+		    strcmp(pbranch->child.node->funname, pparam->excludf[i]) == 0)
 			return iErr;
 	}
 
@@ -232,7 +232,7 @@ int outsubtree(ttree_t *ptree, treeparam_t *pparam, ttreenode_t *pnode,
 						break;
 
 					// do subtree
-					if (pbranch->child !=
+					if (pbranch->child.node !=
 					    pnode) // avoid involving recursion
 						   // in depth decrease
 						if (colr <= 0 ||
@@ -240,11 +240,9 @@ int outsubtree(ttree_t *ptree, treeparam_t *pparam, ttreenode_t *pnode,
 						    prevcol == ROOTMARK)
 							iErr = outsubtree(
 							    ptree, pparam,
-							    pbranch->child,
+							    pbranch->child.node,
 							    fdepth, 0, colr);
 				}
-
-				pbranch = pbranch->next;
 			}
 		} while (pbranch != NULL);
 	}
@@ -269,7 +267,7 @@ int outsubtree(ttree_t *ptree, treeparam_t *pparam, ttreenode_t *pnode,
 						break;
 
 					// do subtree
-					if (pbranch->parent !=
+					if (pbranch->parent.node !=
 					    pnode) // avoid involving recursion
 						   // in depth decrease
 						if (colr <= 0 ||
@@ -277,11 +275,9 @@ int outsubtree(ttree_t *ptree, treeparam_t *pparam, ttreenode_t *pnode,
 						    prevcol == ROOTMARK)
 							iErr = outsubtree(
 							    ptree, pparam,
-							    pbranch->parent, 0,
-							    bdepth, colr);
+							    pbranch->parent.node,
+							    0, bdepth, colr);
 				}
-
-				pbranch = pbranch->next;
 			}
 		} while (pbranch != NULL);
 	}

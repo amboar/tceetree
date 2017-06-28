@@ -174,15 +174,15 @@ int outbranch_gra(ttreebranch_t *pbranch, treeparam_t *pparam)
 	int iErr = 0;
 	char *sbasename = NULL;
 
-	if (grafile && pbranch && pbranch->parent && pbranch->child &&
-	    pbranch->parent->funname && pbranch->child->funname) {
+	if (grafile && pbranch && pbranch->parent.node && pbranch->child.node &&
+	    pbranch->parent.node->funname && pbranch->child.node->funname) {
 		// print the branch: caller -> callee;
-		fprintf(grafile, "\t%s->%s", pbranch->parent->funname,
-			pbranch->child->funname);
-		if (pparam->printfile && pbranch->filename) {
+		fprintf(grafile, "\t%s->%s", pbranch->parent.node->funname,
+			pbranch->child.node->funname);
+		if (pparam->printfile && pbranch->parent.filename) {
 			// if enabled, print the filename where the call has
 			// been found
-			iErr = slibbasename(&sbasename, pbranch->filename, 1);
+			iErr = slibbasename(&sbasename, pbranch->parent.filename, 1);
 			if (iErr == 0) {
 				fprintf(grafile, " [label=\"%s\"", sbasename);
 				if (pbranch->icolor > 0) {
