@@ -4,7 +4,7 @@ set -euo pipefail
 
 TCEETREE=../tceetree
 
-${TCEETREE} -i cscope.out -o tceetree.out
+${TCEETREE} -V -i cscope.out -o tceetree.out
 
 diff -u \
     <(grep '^[[:space:]]' tceetree.out.orig | sort) \
