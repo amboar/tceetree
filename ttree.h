@@ -53,8 +53,8 @@ typedef struct ttree_st {
 	ttreebranch_t *firstbranch; // first branch of linear list
 } ttree_t;
 
-void ttreeinit(ttree_t *ptree);
-void ttreefree(ttree_t *ptree);
+ttree_t *ttreeinit(void);
+void ttreedestroy(ttree_t *);
 ttreenode_t *ttreeaddnode(ttree_t *ptree, char *funname, char *filename);
 int ttreeaddbranch(ttree_t *ptree, ttreenode_t *caller, ttreenode_t *callee,
 		   char *filename);

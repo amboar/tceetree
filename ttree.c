@@ -33,31 +33,18 @@
 #include "ttree.h"
 #endif // _ALL_IN_ONE
 
+#include <ccan/tal/tal.h>
+#include <ccan/tal/str/str.h>
+
 // init tree
-void ttreeinit(ttree_t *ptree)
+ttree_t *ttreeinit()
 {
-	memset(ptree, '\0', sizeof(*ptree));
+	return talz(NULL, ttree_t);
 }
 
-// free tree memory
-void ttreefree(ttree_t *ptree)
+void ttreedestroy(ttree_t *ptree)
 {
-	ttreenode_t *pnode, *pnodenext;
-	ttreebranch_t *pbranch, *pbranchnext;
-
-	pnode = ptree->firstnode;
-	while (pnode) {
-		pnodenext = pnode->next;
-		free(pnode);
-		pnode = pnodenext;
-	}
-
-	pbranch = ptree->firstbranch;
-	while (pbranch) {
-		pbranchnext = pbranch->next;
-		free(pbranch);
-		pbranch = pbranchnext;
-	}
+	tal_free(ptree);
 }
 
 // add a new node (function) to tree
@@ -68,20 +55,20 @@ ttreenode_t *ttreeaddnode(ttree_t *ptree, char *funname, char *filename)
 	if ((pnode = ttreefindnode(ptree, funname, filename)))
 		return pnode;
 
-	pnode = calloc(1, sizeof(ttreenode_t));
+	pnode = talz(ptree, ttreenode_t);
 	if (!pnode) {
 		printf("\nMemory allocation error\n");
 		return NULL;
 	}
 
-	pnode->funname = strdup(funname);
+	pnode->funname = tal_strdup(pnode, funname);
 	if (!pnode->funname)
 		goto cleanup_pnode;
 
 	if (filename) {
-		pnode->filename = strdup(filename);
+		pnode->filename = tal_strdup(pnode, filename);
 		if (!pnode->filename)
-			goto cleanup_funname;
+			goto cleanup_pnode;
 	}
 
 	pnode->next = ptree->firstnode;
@@ -89,11 +76,8 @@ ttreenode_t *ttreeaddnode(ttree_t *ptree, char *funname, char *filename)
 
 	return pnode;
 
-cleanup_funname:
-	free(pnode->funname);
-
 cleanup_pnode:
-	free(pnode);
+	tal_free(pnode);
 
 	return NULL;
 }
@@ -114,7 +98,7 @@ int ttreeaddbranch(ttree_t *ptree, ttreenode_t *caller, ttreenode_t *callee,
 		return 0;
 
 	// only if branch does not exist yet
-	pbranch = calloc(1, sizeof(ttreebranch_t));
+	pbranch = talz(ptree, ttreebranch_t);
 	if (!pbranch) {
 		printf("\nMemory allocation error\n");
 		return -1;
@@ -123,7 +107,7 @@ int ttreeaddbranch(ttree_t *ptree, ttreenode_t *caller, ttreenode_t *callee,
 	// initialize all branch data bytes to 0
 	pbranch->parent = caller;
 	pbranch->child = callee;
-	pbranch->filename = strdup(filename);
+	pbranch->filename = tal_strdup(pbranch, filename);
 	if (!pbranch->filename) {
 		iErr = -1;
 		goto cleanup_pbranch;
@@ -135,7 +119,7 @@ int ttreeaddbranch(ttree_t *ptree, ttreenode_t *caller, ttreenode_t *callee,
 	return iErr;
 
 cleanup_pbranch:
-	free(pbranch);
+	tal_free(pbranch);
 
 	return iErr;
 }

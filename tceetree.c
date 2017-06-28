@@ -318,7 +318,7 @@ int usage_opt(char const *sopt, treeparam_t *ptreeparam)
 int main(int argc, char *argv[])
 {
 	treeparam_t treeparam;
-	ttree_t ttree;
+	ttree_t *ttree;
 	int i;
 	int iErr = 0;
 
@@ -343,17 +343,15 @@ int main(int argc, char *argv[])
 			treeparam.rootno = 1;
 		}
 
-		ttreeinit(&ttree); // initialize tree
+		ttree = ttreeinit(); // initialize tree
 
-		iErr = gettree(
-		    &ttree,
-		    &treeparam); // read cscope file and get the whole tree
+		// read cscope file and get the whole tree
+		iErr = gettree(ttree, &treeparam);
 		if (iErr == 0)
-			iErr = outtree(&ttree,
-				       &treeparam); // make subtree output
-						    // according to options
+			// make subtree output according to options
+			iErr = outtree(ttree, &treeparam);
 
-		ttreefree(&ttree); // free tree memory
+		ttreedestroy(ttree); // free tree memory
 	}
 
 	if (iErr == -2)
