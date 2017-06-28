@@ -51,7 +51,6 @@ typedef struct ttreebranch_st {
 typedef struct ttree_st {
 	ttreenode_t *firstnode;     // first node of linear list
 	ttreebranch_t *firstbranch; // first branch of linear list
-	ttreebranch_t *lastbranch;  // last branch of linear list
 } ttree_t;
 
 void ttreeinit(ttree_t *ptree);

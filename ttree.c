@@ -129,13 +129,8 @@ int ttreeaddbranch(ttree_t *ptree, ttreenode_t *caller, ttreenode_t *callee,
 		goto cleanup_pbranch;
 	}
 
-	if (ptree->lastbranch) {
-		ptree->lastbranch->next = pbranch;
-		ptree->lastbranch = pbranch;
-	} else {
-		ptree->firstbranch = pbranch;
-		ptree->lastbranch = pbranch;
-	}
+	pbranch->next = ptree->firstbranch;
+	ptree->firstbranch = pbranch;
 
 	return iErr;
 

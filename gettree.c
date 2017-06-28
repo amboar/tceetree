@@ -82,7 +82,6 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 		if (sLine[0] != '\t')
 			continue;
 
-
 		interesting = sLine[1] == '@' ||
 			      sLine[1] == '$' ||
 			      sLine[1] == '`';
