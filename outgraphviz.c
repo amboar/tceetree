@@ -97,7 +97,6 @@ int outnode_gra(ttreenode_t *pnode, treeparam_t *pparam)
 	int iErr = 0;
 	char *sclustername = NULL;
 	char *sclusterlabel = NULL;
-	int i, n;
 
 	if (grafile != NULL && pnode != NULL && pnode->funname != NULL) {
 		fprintf(grafile, "\t");
@@ -117,14 +116,7 @@ int outnode_gra(ttreenode_t *pnode, treeparam_t *pparam)
 					iErr = slibcpy(&sclustername,
 						       sclusterlabel, -1);
 					if (iErr == 0) {
-						// replace . with _ for the
-						// cluster name
-						n = strlen(sclustername);
-						for (i = 0; i < n; i++)
-							if (sclustername[i] ==
-							    '.')
-								sclustername
-								    [i] = '_';
+						slibreplacechr(sclustername, '.', '_');
 					}
 				}
 			}

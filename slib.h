@@ -26,6 +26,7 @@
 #ifndef _SLIB_H
 #define _SLIB_H
 
+int slibreplacechr(char *ssrc, char a, char b);
 int slibcpy(char **sout, char const *sin, int errval);
 int slibbasename(char **sbase, char *spath, int withext);
 
