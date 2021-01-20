@@ -102,5 +102,6 @@ ttreenode_t *ttreefindnode(ttree_t *ptree, char *funname, char *filename);
 ttreebranch_t *ttreefindbranch(ttree_t *ptree, ttreenode_t *caller,
 			       ttreenode_t *callee, char *filename,
 			       ttreebranch_t *pstart);
+int ttreegetextendednodename(char *sout, int isize, ttreenode_t *pnode);
 
 #endif // #ifndef _TTREE_H

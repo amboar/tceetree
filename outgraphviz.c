@@ -134,22 +134,18 @@ int outnode_gra(ttreenode_t *pnode, treeparam_t *pparam)
 
 		if (iErr == 0) {
 			// print node
-			char nodename_buf[256];
 			if (pparam->doclusters) {
 				// when clustering functions by files, we need to create a
 				// more unique name for the node by appending the filename
-				char *node_filename = NULL;
-				iErr = slibcpy(&node_filename, pnode->filename, 1);
+				char snodename[256];
+				iErr = ttreegetextendednodename(snodename, sizeof(snodename), pnode);
 				if (iErr != 0)
 					return iErr;
-				slibreplacechr(node_filename, '.', '_');
-				snprintf(nodename_buf, sizeof(nodename_buf), "%s_%s", pnode->funname, node_filename);
-				fprintf(grafile, "%s", nodename_buf);
+				fprintf(grafile, "%s", snodename);
 				// add a label with just the function name to the node
 				fprintf(grafile, " [label=\"%s\"]", pnode->funname);
 			} else {
-				snprintf(nodename_buf, sizeof(nodename_buf), "%s", pnode->funname);
-				fprintf(grafile, "%s", nodename_buf);
+				fprintf(grafile, "%s", pnode->funname);
 			}
 			if (pnode->icolor > 0) {
 				// add style or color attributes for path
@@ -186,25 +182,17 @@ int outbranch_gra(ttreebranch_t *pbranch, treeparam_t *pparam)
 	    pbranch->parent.node->funname && pbranch->child.node->funname) {
 		// print the branch: caller -> callee;
 		if (pparam->doclusters) {
-			char callername_buf[256];
-			char calleename_buf[256];
-			char *caller_filename = NULL;
-			char *callee_filename = NULL;
-			iErr = slibcpy(&caller_filename, pbranch->parent.node->filename, 1);
+			char scallername[256];
+			char scalleename[256];
+			iErr = ttreegetextendednodename(scallername, sizeof(scallername), 
+											pbranch->parent.node);
 			if (iErr != 0)
 				return iErr;
-			iErr = slibcpy(&callee_filename, pbranch->child.node->filename, 2);
+			iErr = ttreegetextendednodename(scalleename, sizeof(scalleename),
+											pbranch->child.node);
 			if (iErr != 0)
 				return iErr;
-			slibreplacechr(caller_filename, '.', '_');
-			slibreplacechr(callee_filename, '.', '_');
-			snprintf(callername_buf, sizeof(callername_buf), "%s_%s",
-						pbranch->parent.node->funname,
-						caller_filename);
-			snprintf(calleename_buf, sizeof(calleename_buf), "%s_%s",
-						pbranch->child.node->funname,
-						callee_filename);
-			fprintf(grafile, "\t%s->%s", callername_buf, calleename_buf);
+			fprintf(grafile, "\t%s->%s", scallername, scalleename);
 		} else {
 			fprintf(grafile, "\t%s->%s", pbranch->parent.node->funname,
 			pbranch->child.node->funname);
