@@ -127,7 +127,7 @@ int outnode_gra(ttreenode_t *pnode, treeparam_t *pparam)
 		}
 
 		// add statement for assigning function to the cluster
-		fprintf(grafile, "subgraph cluster_%s { "
+		fprintf(grafile, "subgraph \"cluster_%s\" { "
 				 "label=\"%s\"; "
 				 "labeljust=\"l\"; ",
 			sclustername, sclusterlabel);
@@ -142,13 +142,13 @@ int outnode_gra(ttreenode_t *pnode, treeparam_t *pparam)
 			free(sclusterlabel);
 			return iErr;
 		}
-		fprintf(grafile, "%s", snodename);
+		fprintf(grafile, "\"%s\"", snodename);
 
 		// add a label with just the function name to the node
 		fprintf(grafile, " [label=\"%s\"]", pnode->funname);
 	} else {
 		// print node name
-		fprintf(grafile, "%s", pnode->funname);
+		fprintf(grafile, "\"%s\"", pnode->funname);
 	}
 
 	// print style information
@@ -192,9 +192,9 @@ int outbranch_gra(ttreebranch_t *pbranch, treeparam_t *pparam)
 											pbranch->child.node);
 			if (iErr != 0)
 				return iErr;
-			fprintf(grafile, "\t%s->%s", scallername, scalleename);
+			fprintf(grafile, "\t\"%s\"->\"%s\"", scallername, scalleename);
 		} else {
-			fprintf(grafile, "\t%s->%s", pbranch->parent.node->funname,
+			fprintf(grafile, "\t\"%s\"->\"%s\"", pbranch->parent.node->funname,
 			pbranch->child.node->funname);
 		}
 		if (pparam->printfile && pbranch->parent.filename) {
