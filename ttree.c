@@ -397,8 +397,8 @@ int ttreegetextendednodename(char *sout, int isize, ttreenode_t *pnode)
 	if (sout == NULL || pnode == NULL || isize <= 0)
 		return 1;
 	// get the number characters we want to write
-	ilen = strlen(pnode->funname);
-	ilen += strlen(pnode->filename);
+	ilen = (pnode->funname == NULL) ? 0 : strlen(pnode->funname);
+	ilen += (pnode->filename == NULL) ? 0 : strlen(pnode->filename);
 	ilen++;	// the '_' in-between
 	// provided buffer size does not fit the resulting string
 	if (isize <= ilen)
