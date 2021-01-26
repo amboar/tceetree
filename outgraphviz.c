@@ -98,76 +98,76 @@ int outnode_gra(ttreenode_t *pnode, treeparam_t *pparam)
 	char *sclustername = NULL;
 	char *sclusterlabel = NULL;
 
-	if (grafile != NULL && pnode != NULL && pnode->funname != NULL) {
-		fprintf(grafile, "\t");
-		if (pparam->doclusters) {
-			// group functions into a cluster for each file
-			// use the filename without path and with extension as
-			// the cluster label
-			iErr = slibbasename(&sclusterlabel, pnode->filename, 1);
-			if (iErr == 0) {
-				// if no file information is present, function
-				// will be grouped into the
-				// library cluster
-				if (sclusterlabel == NULL)
-					iErr = slibcpy(&sclusterlabel,
-						       TT_LIBRARY, -1);
-				if (iErr == 0) {
-					iErr = slibcpy(&sclustername,
-						       sclusterlabel, -1);
-					if (iErr == 0) {
-						slibreplacechr(sclustername, '.', '_');
-					}
-				}
-			}
-			if (iErr == 0) {
-				// add statement for assigning function to the
-				// cluster
-				fprintf(grafile, "subgraph cluster_%s { "
-						 "label=\"%s\"; "
-						 "labeljust=\"l\"; ",
-					sclustername, sclusterlabel);
-			}
-			free(sclustername);
+	if (grafile == NULL || pnode == NULL || pnode->funname == NULL)
+		return -1;
+
+	fprintf(grafile, "\t");
+	if (pparam->doclusters) {
+		// group functions into a cluster for each file using filename without
+		// path and with extension as cluster label
+		iErr = slibbasename(&sclusterlabel, pnode->filename, 1);
+		if (iErr != 0)
+			return iErr; 
+		// if no filename present, group function into the library cluster
+		if (sclusterlabel == NULL)
+			iErr = slibcpy(&sclusterlabel, TT_LIBRARY, -3);
+		if (iErr != 0)
+			return iErr;
+
+		iErr = slibcpy(&sclustername, sclusterlabel, -4);
+		if (iErr != 0) {
 			free(sclusterlabel);
+			return iErr;
 		}
 
-		if (iErr == 0) {
-			// print node
-			if (pparam->doclusters) {
-				// when clustering functions by files, we need to create a
-				// more unique name for the node by appending the filename
-				char snodename[256];
-				iErr = ttreegetextendednodename(snodename, sizeof(snodename), pnode);
-				if (iErr != 0)
-					return iErr;
-				fprintf(grafile, "%s", snodename);
-				// add a label with just the function name to the node
-				fprintf(grafile, " [label=\"%s\"]", pnode->funname);
-			} else {
-				fprintf(grafile, "%s", pnode->funname);
-			}
-			if (pnode->icolor > 0) {
-				// add style or color attributes for path
-				// between root and specified
-				// function
-				if (pparam->hlstyle >= HSTYLES1)
-					fprintf(grafile, " [style=\"%s\"]",
-						hlstyles[pparam->hlstyle]);
-				else
-					fprintf(
-					    grafile,
-					    " [color=\"%s\",fontcolor=\"%s\"]",
-					    hlstyles[pparam->hlstyle],
-					    hlstyles[pparam->hlstyle]);
-			}
-			fprintf(grafile, ";");
-			// close cluster statement, if cluster enabled
-			if (pparam->doclusters)
-				fprintf(grafile, " }");
-			fprintf(grafile, "\n");
+		iErr = slibreplacechr(sclustername, '.', '_');
+		if (iErr != 0) {
+			free(sclusterlabel);
+			return iErr;
 		}
+
+		// add statement for assigning function to the cluster
+		fprintf(grafile, "subgraph cluster_%s { "
+				 "label=\"%s\"; "
+				 "labeljust=\"l\"; ",
+			sclustername, sclusterlabel);
+
+		// print node name
+		// when clustering functions by files, we need to create a
+		// more unique name for the node by appending the filename
+		char snodename[256];
+		iErr = ttreegetextendednodename(snodename, sizeof(snodename), pnode);
+		if (iErr != 0) {
+			free(sclustername);
+			free(sclusterlabel);
+			return iErr;
+		}
+		fprintf(grafile, "%s", snodename);
+
+		// add a label with just the function name to the node
+		fprintf(grafile, " [label=\"%s\"]", pnode->funname);
+	} else {
+		// print node name
+		fprintf(grafile, "%s", pnode->funname);
 	}
+
+	// print style information
+	if (pnode->icolor > 0) {
+		// add style or color attributes for path 
+		// between root and specified function
+		if (pparam->hlstyle >= HSTYLES1)
+			fprintf(grafile, " [style=\"%s\"]",
+				hlstyles[pparam->hlstyle]);
+		else
+			fprintf(grafile, " [color=\"%s\",fontcolor=\"%s\"]",
+			    hlstyles[pparam->hlstyle],
+			    hlstyles[pparam->hlstyle]);
+	}
+	fprintf(grafile, ";");
+	// close cluster statement, if cluster enabled
+	if (pparam->doclusters)
+		fprintf(grafile, " }");
+	fprintf(grafile, "\n");
 
 	return iErr;
 }
