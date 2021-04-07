@@ -101,6 +101,11 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 			if (!ttreeaddnode(ptree, &sLine[2], sfilename))
 				goto cleanup_filein;
 			break;
+		case '#':
+			// add one node for each macro definition
+			if (!ttreeaddnode(ptree, &sLine[2], sfilename))
+				goto cleanup_filein;
+			break;
 		default:
 			break;
 		}
@@ -149,6 +154,11 @@ int gettree(ttree_t *ptree, treeparam_t *pparam)
 
 		case '$':
 			// get the name of caller function
+			strcpy(scaller, &sLine[2]);
+			break;
+
+		case '#':
+			// get the name of caller macro
 			strcpy(scaller, &sLine[2]);
 			break;
 
