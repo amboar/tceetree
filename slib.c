@@ -47,18 +47,18 @@ int slibreplacechr(char *ssrc, char a, char b)
 	return 0;
 }
 // copy string with automatic memory allocation
-int slibcpy(char **sout, char const *sin, int errval)
+int slibcpy(char **sout, char const *ssrc, int errval)
 {
 	// Pay attention to load *sout with NULL if it has never been allocated
 	// before
 	free(*sout);
 
-	if (sin == NULL) {
+	if (ssrc == NULL) {
 		*sout = NULL; // NULL produces NULL
 		return 0;
 	}
 
-	*sout = strdup(sin);
+	*sout = strdup(ssrc);
 	if (*sout == NULL) {
 		printf("\nMemory allocation error\n");
 		return errval;
