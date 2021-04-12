@@ -134,6 +134,8 @@ int outnode_gra(ttreenode_t *pnode, treeparam_t *pparam)
 				 "label=\"%s\"; "
 				 "labeljust=\"l\"; ",
 			sclustername, sclusterlabel);
+		free(sclusterlabel);
+		free(sclustername);
 
 		// print node name
 		// when clustering functions by files, we need to create a
