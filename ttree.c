@@ -24,6 +24,7 @@
  */
 
 #include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -385,4 +386,41 @@ ttreebranch_t *ttreefindbranch(ttree_t *ptree, ttreenode_t *caller,
 	}
 
 	assert(false && "Unexpected filename/caller/callee combination");
+}
+
+// Return the extended name of a node (function name followed by filename) in
+// the given string. The size of the string buffer must be given.
+// On success 0 is returned, 1 or an errno value otherwise.
+int ttreegetextendednodename(char *sout, int isize, ttreenode_t *pnode)
+{
+	int ilen, iret;
+	char *sfilename;
+	// check for some invalid input values
+	if (sout == NULL || pnode == NULL || isize <= 0)
+		return 1;
+	// get the number characters we want to write
+	ilen = (pnode->funname == NULL) ? 0 : strlen(pnode->funname);
+	ilen += (pnode->filename == NULL) ? 0 : strlen(pnode->filename);
+	ilen++;	// the '_' in-between
+	// provided buffer size does not fit the resulting string
+	if (isize <= ilen)
+		goto fail;
+	char *sfilename = NULL;
+	sfilename = strdup(pnode->filename);
+	if (sfilename == NULL)
+		goto fail;
+	iret = slibreplacechr(sfilename, '.', '_');
+	if (iret != 0)
+		goto fail;
+	iret = snprintf(sout, isize, "%s#%s", pnode->funname, sfilename);
+	// if string got truncated, return with error
+	if (iret >= isize)
+		goto fail;
+
+	free(sfilename);
+	return 0;
+
+fail:
+	free(sfilename);
+	return 1;
 }

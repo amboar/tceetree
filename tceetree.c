@@ -23,6 +23,7 @@
  * THE SOFTWARE.
  */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,7 +41,17 @@ const char sversion[] = "1.0.1";	       // software version
 const char sdefaultoutfile[] = "tceetree.out"; // default output file
 
 // setting of string parameters
-int paramstr(char **sout, char const *sin) { return slibcpy(sout, sin, -3); }
+int paramstr(char **sout, char const *sin) {
+	char* buf;
+
+	buf = strdup(sin);
+	if (buf == NULL)
+		return errno;
+
+	*sout = buf;
+
+	return 0;
+}
 
 // setting of string array parameters
 int paramstrarr(char **sout, int *outidx, int maxnum, char const *sin,
@@ -51,7 +62,7 @@ int paramstrarr(char **sout, int *outidx, int maxnum, char const *sin,
 		return -3;
 	}
 
-	return slibcpy(&sout[(*outidx)++], sin, -3);
+	return paramstr(&sout[(*outidx)++], sin);
 }
 
 // setting of default parameters

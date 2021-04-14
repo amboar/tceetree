@@ -33,23 +33,16 @@
 #include "slib.h"
 #endif // _ALL_IN_ONE
 
-// copy string with automatic memory allocation
-int slibcpy(char **sout, char const *sin, int errval)
+// replace character a with b in a string (input string is altered!)
+int slibreplacechr(char *ssrc, char a, char b)
 {
-	// Pay attention to load *sout with NULL if it has never been allocated
-	// before
-	free(*sout);
+	size_t i;
 
-	if (sin == NULL) {
-		*sout = NULL; // NULL produces NULL
-		return 0;
-	}
-
-	*sout = strdup(sin);
-	if (*sout == NULL) {
-		printf("\nMemory allocation error\n");
-		return errval;
-	}
+	if (ssrc == NULL)
+		return 1;
+	for (i = 0; i < strlen(ssrc); i++)
+		if (ssrc[i] == a)
+			ssrc[i] = b;
 
 	return 0;
 }
