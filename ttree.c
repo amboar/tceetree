@@ -24,6 +24,7 @@
  */
 
 #include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -389,10 +390,11 @@ ttreebranch_t *ttreefindbranch(ttree_t *ptree, ttreenode_t *caller,
 
 // Return the extended name of a node (function name followed by filename) in
 // the given string. The size of the string buffer must be given.
-// On success 0 is returned, 1 otherwise.
+// On success 0 is returned, 1 or an errno value otherwise.
 int ttreegetextendednodename(char *sout, int isize, ttreenode_t *pnode)
 {
 	int ilen, iret;
+	char *sfilename;
 	// check for some invalid input values
 	if (sout == NULL || pnode == NULL || isize <= 0)
 		return 1;
@@ -404,8 +406,8 @@ int ttreegetextendednodename(char *sout, int isize, ttreenode_t *pnode)
 	if (isize <= ilen)
 		goto fail;
 	char *sfilename = NULL;
-	iret = slibcpy(&sfilename, pnode->filename, 1);
-	if (iret != 0)
+	sfilename = strdup(pnode->filename);
+	if (sfilename == NULL)
 		goto fail;
 	iret = slibreplacechr(sfilename, '.', '_');
 	if (iret != 0)

@@ -46,26 +46,6 @@ int slibreplacechr(char *ssrc, char a, char b)
 
 	return 0;
 }
-// copy string with automatic memory allocation
-int slibcpy(char **sout, char const *ssrc, int errval)
-{
-	// Pay attention to load *sout with NULL if it has never been allocated
-	// before
-	free(*sout);
-
-	if (ssrc == NULL) {
-		*sout = NULL; // NULL produces NULL
-		return 0;
-	}
-
-	*sout = strdup(ssrc);
-	if (*sout == NULL) {
-		printf("\nMemory allocation error\n");
-		return errval;
-	}
-
-	return 0;
-}
 
 // extract a file base name (with or without extension) from a full path name
 int slibbasename(char **sbase, char *spath, int withext)

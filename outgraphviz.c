@@ -23,6 +23,7 @@
  * THE SOFTWARE.
  */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -109,20 +110,22 @@ int outnode_gra(ttreenode_t *pnode, treeparam_t *pparam)
 		if (iErr != 0)
 			return iErr; 
 		// if no filename present, group function into the library cluster
-		if (sclusterlabel == NULL)
-			iErr = slibcpy(&sclusterlabel, TT_LIBRARY, -3);
-		if (iErr != 0)
-			return iErr;
+		if (sclusterlabel == NULL) {
+			sclusterlabel = strdup(TT_LIBRARY);
+			if (sclusterlabel == NULL)
+				return errno;
+		}
 
-		iErr = slibcpy(&sclustername, sclusterlabel, -4);
-		if (iErr != 0) {
+		sclustername = strdup(sclusterlabel);
+		if (sclustername == NULL) {
 			free(sclusterlabel);
-			return iErr;
+			return errno;
 		}
 
 		iErr = slibreplacechr(sclustername, '.', '_');
 		if (iErr != 0) {
 			free(sclusterlabel);
+			free(sclustername);
 			return iErr;
 		}
 
